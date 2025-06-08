@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Knights and Portals - Shortest Path Finder</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      padding: 40px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: auto;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .instructions {
+      font-size: 15px;
+      background: #f9f9f9;
+      padding: 12px;
+      border-left: 5px solid #3498db;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 140px;
+      font-family: monospace;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 4px;
+      resize: vertical;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .output {
+      margin-top: 25px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #2e7d32;
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 13px;
+      color: #666;
+      text-align: center;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Knights and Portals</h1>
+
+    <div class="instructions">
+      <strong>Instructions:</strong><br/>
+      Enter the grid using space-separated values. Use numbers only:<br/>
+      <code>1</code> = empty cell, <code>0</code> = wall<br/>
+      The top-left cell is the <strong>Start</strong>, and the bottom-right is the <strong>End</strong>.<br/>
+      You are allowed to teleport <strong>exactly once</strong> between any two empty cells.<br/>
+      <br/>
+      <strong>Example Input:</strong><br/>
+      <pre>1 0 1 1<br/>1 1 0 1<br/>0 1 1 1<br/>1 0 1 1</pre>
+    </div>
+
+    <textarea id="gridInput" placeholder="Enter grid (0 = wall, 1 = empty). Example:
+1 0 1 1
+1 1 0 1
+0 1 1 1
+1 0 1 1"></textarea>
+
+    <button onclick="runShortestPath()">Find Shortest Path</button>
+
+    <div class="output" id="result"></div>
+  </div>
+
+  <footer>
+    © 2025 Knights and Portals Visualizer
+  </footer>
+
+<script>
+  const directions = [[-1,0],[1,0],[0,-1],[0,1]];
+
+  function shortestPathWithTeleport(grid) {
+    const n = grid.length, m = grid[0].length;
+    if(grid[0][0] === 0 || grid[n-1][m-1] === 0) return -1;
+
+    const emptyCells = [];
+    for(let r=0; r<n; r++) {
+      for(let c=0; c<m; c++) {
+        if(grid[r][c] === 1) emptyCells.push([r, c]);
+      }
+    }
+
+    const visited = Array.from({length:n}, () => 
+      Array.from({length:m}, () => [false, false])
+    );
+
+    const queue = [[0, 0, 0, 0]];
+    visited[0][0][0] = true;
+
+    while(queue.length > 0) {
+      const [r, c, steps, teleportUsed] = queue.shift();
+      if(r === n-1 && c === m-1) return steps;
+
+      for(const [dr, dc] of directions) {
+        const nr = r + dr, nc = c + dc;
+        if(nr >= 0 && nr < n && nc >= 0 && nc < m && grid[nr][nc] === 1 && !visited[nr][nc][teleportUsed]) {
+          visited[nr][nc][teleportUsed] = true;
+          queue.push([nr, nc, steps + 1, teleportUsed]);
+        }
+      }
+
+      if(teleportUsed === 0) {
+        for(const [tr, tc] of emptyCells) {
+          if((tr !== r || tc !== c) && !visited[tr][tc][1]) {
+            visited[tr][tc][1] = true;
+            queue.push([tr, tc, steps + 1, 1]);
+          }
+        }
+      }
+    }
+
+    return -1;
+  }
+
+  function parseGrid(input) {
+    const rows = input.trim().split('\n');
+    return rows.map(row => row.trim().split(/\s+/).map(Number));
+  }
+
+  function runShortestPath() {
+    const input = document.getElementById('gridInput').value;
+    if(!input.trim()) {
+      alert('Please enter a grid.');
+      return;
+    }
+
+    let grid;
+    try {
+      grid = parseGrid(input);
+    } catch {
+      alert('Invalid input format. Use rows of 0s and 1s separated by spaces.');
+      return;
+    }
+
+    const rowLength = grid[0].length;
+    for(const row of grid) {
+      if(row.length !== rowLength) {
+        alert('All rows must have the same number of columns.');
+        return;
+      }
+      for(const val of row) {
+        if(val !== 0 && val !== 1) {
+          alert('Grid values must be 0 or 1 only.');
+          return;
+        }
+      }
+    }
+
+    const shortest = shortestPathWithTeleport(grid);
+    document.getElementById('result').textContent =
+      shortest === -1 ? "No path available." : `Shortest path length (with one teleport allowed): ${shortest}`;
+  }
+
+  document.getElementById('gridInput').value =
+`1 0 1 1
+1 1 0 1
+0 1 1 1
+1 0 1 1`;
+</script>
+
+</body>
+</html>
